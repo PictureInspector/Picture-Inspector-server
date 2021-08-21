@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset
+from torch.nn.utils.rnn import pad_sequence
 import torchvision.transforms as transforms
 from PIL import Image
 import pandas as pd
@@ -10,6 +11,7 @@ spacy_eng = spacy.load("en")
 start_token = "<SOS>"
 end_token = "<EOS>"
 unk_token = "<UNK>"
+pad_token = "<PAD>"
 
 
 class Vocabulary:
@@ -19,9 +21,9 @@ class Vocabulary:
         :param occur_threshold: threshold for a word to be added to the vocabulary
         """
         # index to word converter
-        self.idx2wrd = {0: "<PAD>", 1: "<SOS>", 2: "<EOS>", 3: "<UNK>"}
+        self.idx2wrd = {0: pad_token, 1: start_token, 2: end_token, 3: unk_token}
         # word to index converter
-        self.wrd2idx = {"<PAD>": 0, "<SOS>": 1, "<EOS>": 2, "<UNK>": 3}
+        self.wrd2idx = {pad_token: 0, start_token: 1, end_token: 2, unk_token: 3}
         self.occur_threshold = occur_threshold
 
     def __len__(self) -> int:
@@ -103,7 +105,7 @@ class FlickrDataset(Dataset):
         """
         return len(self.df)
 
-    def __getitem__(self, index: int) -> (Image, torch.tensor):
+    def __getitem__(self, index: int) -> tuple:
         """
         :param index: index of the item
         :return: the image and the caption corresponding to that index
@@ -122,3 +124,24 @@ class FlickrDataset(Dataset):
         numericalized_caption.append(self.vocab.wrd2idx[end_token])
 
         return img, torch.tensor(numericalized_caption)
+
+class MyCollate:
+    def __init__(self, pad_idx: int) -> None:
+        """
+        Initialize Collate
+        :param pad_idx: value by which captions will be padded
+        """
+        self.pad_idx = pad_idx
+
+    def __call__(self, batch: list) -> tuple:
+        """
+        :param batch: sample of items from the dataset
+        :return: images and padded captions
+        """
+        imgs = [item[0].unsqueeze(0) for item in batch]
+        imgs = torch.cat(imgs, dim=0)
+        targets = [item[1] for item in batch]
+        targets = pad_sequence(targets, batch_first=False, padding_value=self.pad_idx)
+
+        return imgs, targets
+
