@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 import torchvision.transforms as transforms
 from PIL import Image
@@ -79,25 +79,25 @@ class Vocabulary:
 
 
 class FlickrDataset(Dataset):
-    def __init__(self, root: str, captions_file: str, transform: transforms.Compose = None, occur_threshold: int = 5)\
+    def __init__(self, root: str, annotation_file: str, transform: transforms.Compose = None, occur_threshold: int = 5)\
             -> None:
         """
         Initialize the dataset
-        :param root: root directory
-        :param captions_file: file with image filenames and their appropriate captions
+        :param root: directory with the images
+        :param annotation_file: file with image filenames and their appropriate captions
         :param transform: transform to be applies to the image
         :param occur_threshold: threshold for a word to be added to the vocabulary
         """
         self.root = root
-        self.df = pd.read_csv(captions_file)
+        self.df = pd.read_csv(annotation_file)
         self.transform = transform
 
         self.img_filenames = self.df["image"]
         self.captions = self.df["caption"]
 
-        self.vocab = Vocabulary(occur_threshold)
+        self.voc = Vocabulary(occur_threshold)
         # build vocabulary from the captions
-        self.vocab.build_vocabulary(self.captions.tolist())
+        self.voc.build_vocabulary(self.captions.tolist())
 
     def __len__(self) -> int:
         """
@@ -119,11 +119,12 @@ class FlickrDataset(Dataset):
             img = self.transform(img)
 
         # add the start token and the end token to the numericalized text
-        numericalized_caption = [self.vocab.wrd2idx[start_token]]
-        numericalized_caption += self.vocab.numericalize(caption)
-        numericalized_caption.append(self.vocab.wrd2idx[end_token])
+        numericalized_caption = [self.voc.wrd2idx[start_token]]
+        numericalized_caption += self.voc.numericalize(caption)
+        numericalized_caption.append(self.voc.wrd2idx[end_token])
 
         return img, torch.tensor(numericalized_caption)
+
 
 class MyCollate:
     def __init__(self, pad_idx: int) -> None:
@@ -145,3 +146,12 @@ class MyCollate:
 
         return imgs, targets
 
+
+def get_dataloader(root, annotation_file, transform=None, batch_size=32, num_workers=8, shuffle=True, pin_memory=True):
+    dataset = FlickrDataset(root, annotation_file, transform=transform)
+
+    pad_idx = dataset.voc.wrd2idx[pad_token]
+
+    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle,
+                            pin_memory=pin_memory, collate_fn=MyCollate(pad_idx=pad_idx))
+    return dataset, dataloader
