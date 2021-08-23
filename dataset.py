@@ -7,7 +7,7 @@ import pandas as pd
 import os
 import spacy
 
-spacy_eng = spacy.load("en")
+spacy_eng = spacy.load('en_core_web_sm')
 start_token = "<SOS>"
 end_token = "<EOS>"
 unk_token = "<UNK>"
