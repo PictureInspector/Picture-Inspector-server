@@ -7,7 +7,7 @@ print(device)
 
 
 class Encoder(nn.Module):
-    def __init__(self, encoded_size:int = 14, train_conv: bool = False):
+    def __init__(self, encoded_size: int = 14, train_conv: bool = False) -> None:
         """
         Initialize the encoder class
         :param encoded_size: size of the result image
@@ -32,7 +32,7 @@ class Encoder(nn.Module):
             for parameter in conv.parameters():
                 parameter.requires_grad = train_conv
 
-    def forward(self, imgs):
+    def forward(self, imgs: torch.tensor) -> torch.tensor:
         """
         Forward propagation of Encoder
         :param imgs: a batch of images
@@ -44,4 +44,33 @@ class Encoder(nn.Module):
         return out
 
 
-model = Encoder().to(device)
+class Attention(nn.Module):
+    def __init__(self, encoder_dim: int, decoder_dim: int, attention_dim: int) -> None:
+        """
+        Initialize the Attention class
+        :param encoder_dim: size of encoded images
+        :param decoder_dim: size of decoder's RNN
+        :param attention_dim: size of the attention network
+        """
+        super(Attention, self).__init__()
+        self.encoder_attention = nn.Linear(encoder_dim, attention_dim)
+        self.decoder_attention = nn.Linear(decoder_dim, attention_dim)
+        self.full_attention = nn.Linear(attention_dim, 1)
+        self.relu = nn.ReLU()
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, encoder_out: torch.tensor, decoder_hidden: torch.tensor) -> tuple:
+        """
+        Forward propagation of Attention
+        :param encoder_out: encoded images
+        :param decoder_hidden: previous encoded output
+        :return: weights, attention encoding
+        """
+        att1 = self.encoder_attention(encoder_out)
+        att2 = self.decoder_attention(decoder_hidden)
+        att = self.full_attention(self.relu(att1 + att2.unsqueeze(1))).squeeze(2)
+        alpha = self.softmax(att)
+        attention_encoding = (encoder_out * alpha.unsqueeze(2)).sum(dim=1)
+
+        return alpha, attention_encoding
+
