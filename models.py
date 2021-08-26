@@ -7,11 +7,10 @@ print(device)
 
 
 class Encoder(nn.Module):
-    def __init__(self, encoded_size: int = 14, train_conv: bool = False) -> None:
+    def __init__(self, encoded_size: int = 14) -> None:
         """
         Initialize the encoder class
         :param encoded_size: size of the result image
-        :param train_conv: whether to train ResNet or not
         """
         super(Encoder, self).__init__()
 
@@ -23,6 +22,12 @@ class Encoder(nn.Module):
         # resize image to a fixed size
         self.adaptive_pool = nn.AdaptiveAvgPool2d((encoded_size, encoded_size))
 
+    def fine_tune(self, train_conv: bool) -> None:
+        """
+        Set gradients according to whether we train the encoder or not
+        :param train_conv: whether to train ResNet or not
+        :return: None
+        """
         for parameter in self.resnet.parameters():
             parameter.requires_grad = False
 
