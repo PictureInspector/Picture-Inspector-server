@@ -145,25 +145,3 @@ class MyCollate:
         targets = pad_sequence(targets, batch_first=False, padding_value=self.pad_idx)
 
         return imgs, targets
-
-
-def get_dataloader(root: str, annotation_file: str, transform: transforms.Compose = None, batch_size: int = 32,
-                   num_workers: int = 8, shuffle: bool = True, pin_memory: bool = True) \
-        -> tuple[FlickrDataset, DataLoader]:
-    """
-    :param root: directory with the images
-    :param annotation_file: file with captions for each image file
-    :param transform: transform to be applied to the image
-    :param batch_size: size of the batch
-    :param num_workers: number of loader worker processes
-    :param shuffle:whether to shuffle the dataset or not
-    :param pin_memory: whether to automatically put the fetched data Tensors in pinned memory or not
-    :return: Dataloader with the images and captions
-    """
-    dataset = FlickrDataset(root, annotation_file, transform=transform)
-
-    pad_idx = dataset.voc.wrd2idx[pad_token]
-
-    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle,
-                            pin_memory=pin_memory, collate_fn=MyCollate(pad_idx=pad_idx))
-    return dataset, dataloader
