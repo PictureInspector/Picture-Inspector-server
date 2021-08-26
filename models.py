@@ -127,54 +127,42 @@ class Decoder(nn.Module):
         cell = self.initial_cell(mean_encoder_out)
         return hidden, cell
 
-    def forward(self, encoder_out: torch.Tensor, encoded_captions: torch.Tensor, caption_lengths: torch.Tensor)\
-            -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(self, encoder_out: torch.Tensor, encoded_captions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Forward propagation of the decoder
         :param encoder_out: encoded images
         :param encoded_captions: encoded captions
-        :param caption_lengths: caption lengths
-        :return: scores for each word in the vocabulary, sorted encoded captions, decode lengths, weights, sort indices
+        :return: scores for each word in the vocabulary, weights
         """
         batch_size = encoder_out.size(0)
         encoder_dim = encoder_out.size(-1)
+        decode_length = encoded_captions.size(0) - 1
         voc_size = self.voc_size
 
         # Flatten the image
         encoder_out = encoder_out.view(batch_size, -1, encoder_dim)
         num_pixels = encoder_out.size(1)
 
-        # Sort the input data by the length in the decreasing order
-        caption_lengths, sort_ind = caption_lengths.squeeze(1).sort(dim=0, descending=True)
-        encoder_out = encoder_out[sort_ind]
-        encoded_captions = encoded_captions[sort_ind]
-
         embeds = self.embed(encoded_captions)
 
         # Initialize the hidden and cell states of the LSTM
         hidden, cell = self.initial_hidden(encoder_out)
 
-        # Don't decode end token since after generating  generating this token we will finish generating caption
-        decode_lengths = (caption_lengths - 1).tolist()
+        predictions = torch.zeros(batch_size, decode_length, voc_size).to(device)
+        alphas = torch.zeros(batch_size, decode_length, num_pixels).to(device)
 
-        predictions = torch.zeros(batch_size, max(decode_lengths), voc_size).to(device)
-        alphas = torch.zeros(batch_size, max(decode_lengths), num_pixels).to(device)
-
-        for t in range(max(decode_lengths)):
-            # fin the number of captions with length greater than t
-            batch_size_t = sum([length > t for length in decode_lengths])
-            # apply the attention to such captions
-            attention_weighted_encoding, alpha = self.attention(encoder_out[:batch_size_t],
-                                                                hidden[:batch_size_t])
+        for t in range(decode_length):
+            # apply the attention to the captions
+            attention_weighted_encoding, alpha = self.attention(encoder_out, hidden)
             # apply gate to the hidden state
-            gate = self.sigmoid(self.f_beta(hidden[:batch_size_t]))
+            gate = self.sigmoid(self.f_beta(hidden))
             attention_weighted_encoding = gate * attention_weighted_encoding
             # get the next hidden and cell states of LSTM
-            hidden, cell = self.lstm_cell(torch.cat([embeds[:batch_size_t, t, :], attention_weighted_encoding], dim=1),
-                                          (hidden[:batch_size_t], cell[:batch_size_t]))
+            hidden, cell = self.lstm_cell(torch.cat([embeds[:, t, :], attention_weighted_encoding], dim=1),
+                                          (hidden, cell))
             # get the predictions for each word in the vocabulary
             preds = self.fc(self.dropout(hidden))
-            predictions[:batch_size_t, t, :] = preds
-            alphas[:batch_size_t, t, :] = alpha
+            predictions[:, t, :] = preds
+            alphas[:, t, :] = alpha
 
-        return predictions, encoded_captions, decode_lengths, alphas, sort_ind
+        return predictions, alphas
