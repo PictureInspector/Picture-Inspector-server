@@ -38,40 +38,9 @@ class Encoder(nn.Module):
         return self.dropout(self.relu(out))
 
 
-class Attention(nn.Module):
-    def __init__(self, encoder_dim: int, decoder_dim: int, attention_dim: int) -> None:
-        """
-        Initialize the Attention class
-        :param encoder_dim: size of encoded images
-        :param decoder_dim: size of decoder's RNN
-        :param attention_dim: size of the attention network
-        """
-        super(Attention, self).__init__()
-        self.encoder_attention = nn.Linear(encoder_dim, attention_dim)
-        self.decoder_attention = nn.Linear(decoder_dim, attention_dim)
-        self.full_attention = nn.Linear(attention_dim, 1)
-        self.relu = nn.ReLU()
-        self.softmax = nn.Softmax(dim=1)
-
-    def forward(self, encoder_out: torch.Tensor, decoder_hidden: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        Forward propagation of Attention
-        :param encoder_out: encoded images
-        :param decoder_hidden: previous encoded output
-        :return: weights, attention encoding
-        """
-        att1 = self.encoder_attention(encoder_out)
-        att2 = self.decoder_attention(decoder_hidden)
-        att = self.full_attention(self.relu(att1 + att2.unsqueeze(1))).squeeze(2)
-        alpha = self.softmax(att)
-        attention_encoding = (encoder_out * alpha.unsqueeze(2)).sum(dim=1)
-
-        return alpha, attention_encoding
-
-
 class Decoder(nn.Module):
-    def __init__(self, attention_dim: int, decoder_dim: int, embed_dim: int, voc_size: int, encoder_dim: int = 2048,
-                 dropout: float = 0.5) -> None:
+    def __init__(self, decoder_dim: int, embed_dim: int, voc_size: int, encoder_dim: int = 2048, dropout: float = 0.5) \
+            -> None:
         """
         :param attention_dim: size of the attention network
         :param decoder_dim: size of decoder's RNN
@@ -82,8 +51,6 @@ class Decoder(nn.Module):
         """
         super(Decoder, self).__init__()
         self.voc_size = voc_size
-
-        self.attention = Attention(encoder_dim, decoder_dim, attention_dim)
 
         self.embed = nn.Embedding(voc_size, embed_dim)
         self.dropout = nn.Dropout(p=dropout)
