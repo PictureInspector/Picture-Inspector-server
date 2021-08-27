@@ -7,45 +7,35 @@ print(device)
 
 
 class Encoder(nn.Module):
-    def __init__(self, encoded_size: int = 14) -> None:
+    def __init__(self, embed_size: int,  dropout: int = 0.5, train_conv: bool = False) -> None:
         """
         Initialize the encoder class
-        :param encoded_size: size of the result image
+        :param embed_size: size of the result tensor
+        :param dropout: dropout probability
+        :param train_conv: whether to train ResNet or not
         """
         super(Encoder, self).__init__()
 
-        resnet = torchvision.models.resnet50(pretrained=True)
-        # remove linear and pool layers
-        modules = list(resnet.children())[:-2]
-        self.resnet = nn.Sequential(*modules)
+        self.resnet = torchvision.models.resnet50(pretrained=True)
+        self.resnet.fc = nn.Linear(self.resnet.fc.in_features, embed_size)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
 
-        # resize image to a fixed size
-        self.adaptive_pool = nn.AdaptiveAvgPool2d((encoded_size, encoded_size))
-
-    def fine_tune(self, train_conv: bool) -> None:
-        """
-        Set gradients according to whether we train the encoder or not
-        :param train_conv: whether to train ResNet or not
-        :return: None
-        """
-        for parameter in self.resnet.parameters():
-            parameter.requires_grad = False
-
-        # if we are fine-tuning ResNet, set requires_grad to True
-        for conv in list(self.resnet.children())[5:]:
-            for parameter in conv.parameters():
-                parameter.requires_grad = train_conv
+        # Set ResNet gradient according to train_conv
+        for name, param in self.resnet.named_parameters():
+            if "fc.weight" in name or "fc.bias" in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = train_conv
 
     def forward(self, imgs: torch.Tensor) -> torch.Tensor:
         """
         Forward propagation of Encoder
         :param imgs: a batch of images
-        :return: Tensor with encoded images of shape (batch_size, encoded_size, encoded_size, 2048)
+        :return: Tensor with encoded images of shape (batch_size, embed_size)
         """
         out = self.resnet(imgs)
-        out = self.adaptive_pool(out)
-        out = out.permute(0, 2, 3, 1)
-        return out
+        return self.dropout(self.relu(out))
 
 
 class Attention(nn.Module):
@@ -137,6 +127,7 @@ class Decoder(nn.Module):
         batch_size = encoder_out.size(0)
         encoder_dim = encoder_out.size(-1)
         decode_length = encoded_captions.size(0) - 1
+        encoded_captions = encoded_captions.permute((1, 0))
         voc_size = self.voc_size
 
         # Flatten the image
@@ -153,11 +144,13 @@ class Decoder(nn.Module):
 
         for t in range(decode_length):
             # apply the attention to the captions
-            attention_weighted_encoding, alpha = self.attention(encoder_out, hidden)
+            alpha, attention_weighted_encoding = self.attention(encoder_out, hidden)
             # apply gate to the hidden state
             gate = self.sigmoid(self.f_beta(hidden))
             attention_weighted_encoding = gate * attention_weighted_encoding
             # get the next hidden and cell states of LSTM
+            #print(encoded_captions.shape)
+            #print(embeds.shape, attention_weighted_encoding.shape)
             hidden, cell = self.lstm_cell(torch.cat([embeds[:, t, :], attention_weighted_encoding], dim=1),
                                           (hidden, cell))
             # get the predictions for each word in the vocabulary
