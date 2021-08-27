@@ -146,7 +146,7 @@ class Decoder(nn.Module):
         embeds = self.embed(encoded_captions)
 
         # Initialize the hidden and cell states of the LSTM
-        hidden, cell = self.initial_hidden(encoder_out)
+        hidden, cell = self.init_hidden_state(encoder_out)
 
         predictions = torch.zeros(batch_size, decode_length, voc_size).to(device)
         alphas = torch.zeros(batch_size, decode_length, num_pixels).to(device)
