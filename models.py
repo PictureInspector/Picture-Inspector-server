@@ -64,3 +64,29 @@ class Decoder(nn.Module):
         out = self.fc(hidden)
 
         return out
+
+
+class Model(nn.Module):
+    def __init__(self, embed_dim: int, decoder_dim: int, voc_size: int, num_layers: int) -> None:
+        """
+        Initialization of the model
+        :param embed_dim: embedding size
+        :param decoder_dim: size of decoder's RNN
+        :param voc_size: size of the vocabulary
+        :param num_layers: the number of layers in LSTM
+        """
+        super(Model, self).__init__()
+        self.encoder = Encoder(embed_dim)
+        self.decoder = Decoder(decoder_dim, embed_dim, voc_size, num_layers)
+
+    def forward(self, imgs: torch.Tensor, captions: torch.Tensor) -> torch.Tensor:
+        """
+        Forward propagation of the model
+        :param imgs: a batch of images
+        :param captions: encoded captions
+        :return: scores for each word in the vocabulary
+        """
+        encoder_out = self.encoder(imgs)
+        out = self.decoder(encoder_out, captions)
+
+        return out
