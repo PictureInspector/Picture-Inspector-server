@@ -81,7 +81,7 @@ class Model(nn.Module):
         """
         super(Model, self).__init__()
         self.encoder = Encoder(embed_dim, dropout, train_conv)
-        self.decoder = Decoder(decoder_dim, embed_dim, voc_size, num_layers)
+        self.decoder = Decoder(decoder_dim, embed_dim, voc_size, num_layers, dropout)
 
     def forward(self, imgs: torch.Tensor, captions: torch.Tensor) -> torch.Tensor:
         """
