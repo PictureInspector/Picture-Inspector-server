@@ -1,14 +1,16 @@
-import torch
+import torch.nn as nn
+import torch.optim as optim
 
 
-def adjust_lr(optimizer: torch.optim.Optimizer, factor: float) -> None:
+def load_checkpoint(checkpoint: dict, model: nn.Module, optimizer: optim.Optimizer) -> int:
     """
-    Decay the learning rate by the specified factor
-    :param optimizer: optimizer which learning rate should be decayed
-    :param factor: factor which the learning rate should be multiplied by
-    :return: None
+    Loads model. optimizer and step number from the checkpoint
+    :param checkpoint: Dictionary with model state dict, optimizer state dict and step number
+    :param model: Model to be loaded
+    :param optimizer: Optimizer for this model
+    :return: step number
     """
-    print("\n Decaying learning rate")
-    for param_group in optimizer.param_groups:
-        param_group['lr'] *= factor
-    print(f"The new learning rate is {optimizer.param_groups[0]['lr']}")
+    model.load_state_dict(checkpoint["model"])
+    optimizer.load_state_dict(checkpoint["optimizer"])
+    step = checkpoint["step"]
+    return step
