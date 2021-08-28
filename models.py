@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
+from dataset import Vocabulary
 
 
 class Encoder(nn.Module):
@@ -93,3 +94,35 @@ class Model(nn.Module):
         out = self.decoder(encoder_out, captions)
 
         return out
+
+    def caption_image(self, img: torch.Tensor, voc: Vocabulary, max_len: int = 50, eos_token: str = "<EOS>") \
+            -> list[str]:
+        """
+        Caption the given image
+        :param img: image to be captioned
+        :param voc: vocabulary
+        :param max_len: the maximum length of the caption
+        :param eos_token: the token that indicates the end of the caption
+        :return: the list of tokens in the caption
+        """
+        caption = []
+
+        with torch.no_grad():
+            x = self.encoder(img).unsqueeze(0)
+            cell = None
+
+            for _ in range(max_len):
+                hidden, cell = self.decoder.lstm(x, cell)
+                out = self.decoder.fc(hidden.squeeze(0))
+                # get the item with the greatest score
+                predicted = out.argmax(1)
+                caption.append(predicted.item())
+                # get the embedding from that word
+                x = self.decoder.embed(predicted).unsqueeze(0)
+
+                # if eos_token is produced then finish captioning
+                if voc.idx2wrd[predicted.item()] == eos_token:
+                    break
+
+        # transform indices to captions
+        return [voc.idx2wrd[idx] for idx in caption]
