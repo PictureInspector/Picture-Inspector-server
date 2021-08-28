@@ -2,9 +2,6 @@ import torch
 import torch.nn as nn
 import torchvision
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
-
 
 class Encoder(nn.Module):
     def __init__(self, embed_size: int,  dropout: int = 0.5, train_conv: bool = False) -> None:
@@ -39,90 +36,31 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, decoder_dim: int, embed_dim: int, voc_size: int, encoder_dim: int = 2048, dropout: float = 0.5) \
-            -> None:
+    def __init__(self, decoder_dim: int, embed_dim: int, voc_size: int, num_layers: int, dropout: float = 0.5) -> None:
         """
-        :param attention_dim: size of the attention network
         :param decoder_dim: size of decoder's RNN
         :param embed_dim: embedding size
         :param voc_size: size of the vocabulary
-        :param encoder_dim: size of encoded images
+        :param num_layers: the number of layers in LSTM
         :param dropout: dropout probability
         """
         super(Decoder, self).__init__()
-        self.voc_size = voc_size
 
         self.embed = nn.Embedding(voc_size, embed_dim)
         self.dropout = nn.Dropout(p=dropout)
-        self.lstm_cell = nn.LSTMCell(embed_dim + encoder_dim, decoder_dim, bias=True)
-        self.initial_hidden = nn.Linear(encoder_dim, decoder_dim)
-        self.initial_cell = nn.Linear(encoder_dim, decoder_dim)
-        self.f_beta = nn.Linear(decoder_dim, encoder_dim)  # for a sigmoid-activated gate
-        self.sigmoid = nn.Sigmoid()
+        self.lstm = nn.LSTM(embed_dim, decoder_dim, num_layers)
         self.fc = nn.Linear(decoder_dim, voc_size)
 
-        # initialize weights of some layers with the uniform distribution
-        self.init_weights()
-
-    def init_weights(self) -> None:
-        """
-        Initialize weights of some layers with the uniform distribution
-        :return: None
-        """
-        self.embed.weight.data.uniform_(-0.1, 0.1)
-        self.fc.bias.data.fill_(0)
-        self.fc.weight.data.uniform_(-0.1, 0.1)
-
-    def init_hidden_state(self, encoder_out: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        Initialize the hidden and cell states of decoder's LSTM based on the encoded images
-        :param encoder_out: encoded images
-        :return: hidden state, cell state
-        """
-        mean_encoder_out = encoder_out.mean(dim=1)
-        hidden = self.initial_hidden(mean_encoder_out)
-        cell = self.initial_cell(mean_encoder_out)
-        return hidden, cell
-
-    def forward(self, encoder_out: torch.Tensor, encoded_captions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, encoder_out: torch.Tensor, captions: torch.Tensor) -> torch.Tensor:
         """
         Forward propagation of the decoder
         :param encoder_out: encoded images
-        :param encoded_captions: encoded captions
-        :return: scores for each word in the vocabulary, weights
+        :param captions: encoded captions
+        :return: scores for each word in the vocabulary
         """
-        batch_size = encoder_out.size(0)
-        encoder_dim = encoder_out.size(-1)
-        decode_length = encoded_captions.size(0) - 1
-        encoded_captions = encoded_captions.permute((1, 0))
-        voc_size = self.voc_size
+        embeds = self.dropout(self.embed(captions))
+        embeds = torch.cat((encoder_out.unsqueeze(0), embeds), dim=0)
+        hidden, _ = self.lstm(embeds)
+        out = self.fc(hidden)
 
-        # Flatten the image
-        encoder_out = encoder_out.view(batch_size, -1, encoder_dim)
-        num_pixels = encoder_out.size(1)
-
-        embeds = self.embed(encoded_captions)
-
-        # Initialize the hidden and cell states of the LSTM
-        hidden, cell = self.init_hidden_state(encoder_out)
-
-        predictions = torch.zeros(batch_size, decode_length, voc_size).to(device)
-        alphas = torch.zeros(batch_size, decode_length, num_pixels).to(device)
-
-        for t in range(decode_length):
-            # apply the attention to the captions
-            alpha, attention_weighted_encoding = self.attention(encoder_out, hidden)
-            # apply gate to the hidden state
-            gate = self.sigmoid(self.f_beta(hidden))
-            attention_weighted_encoding = gate * attention_weighted_encoding
-            # get the next hidden and cell states of LSTM
-            #print(encoded_captions.shape)
-            #print(embeds.shape, attention_weighted_encoding.shape)
-            hidden, cell = self.lstm_cell(torch.cat([embeds[:, t, :], attention_weighted_encoding], dim=1),
-                                          (hidden, cell))
-            # get the predictions for each word in the vocabulary
-            preds = self.fc(self.dropout(hidden))
-            predictions[:, t, :] = preds
-            alphas[:, t, :] = alpha
-
-        return predictions, alphas
+        return out
