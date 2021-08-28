@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import torch.backends.cudnn as cudnn
 import torchvision.transforms as transforms
 from dataset import FlickrDataset, MyCollate
-from models import Encoder, Decoder
-from utils import adjust_lr
+from models import Model
+from utils import load_checkpoint, save_checkpoint
 from tqdm import tqdm
 
 pad_token = "<PAD>"
@@ -17,17 +18,29 @@ captions_file = "./data/captions.txt"  # file with captions
 # Training parameters
 batch_size = 32
 workers = 2
+lr = 1e-3
+checkpoint_path = "checkpoint.pth"
+load_model = False
+save_model = True
+step = 0
+epochs = 20
 
 # Model parameters
 embed_dim = 256  # embedding size
 attention_dim = 256  # size of the attention network
 decoder_dim = 256
 dropout = 0.5
+train_conv = False
+num_layers = 1
+print_freq = 100
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 cudnn.benchmark = True
 
 
 def main():
+    global step
     transform = transforms.Compose(
         [
             transforms.Resize((256, 256)),
@@ -43,6 +56,57 @@ def main():
                               pin_memory=True, collate_fn=MyCollate(pad_idx=pad_idx))
     val_loader = DataLoader(dataset=train_set, batch_size=batch_size, num_workers=workers, shuffle=True,
                             pin_memory=True, collate_fn=MyCollate(pad_idx=pad_idx))
+    model = Model(embed_dim, decoder_dim, len(dataset.voc), num_layers, dropout, train_conv).to(device)
+    criterion = nn.CrossEntropyLoss(ignore_index=dataset.voc.wrd2idx[pad_token])
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+
+    if load_model:
+        checkpoint = torch.load(checkpoint_path)
+        step = load_checkpoint(checkpoint, model, optimizer)
+
+    model.train()
+
+    for epoch in range(step, epochs):
+        if save_model:
+            checkpoint = {
+                "state_dict": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "step": epoch,
+            }
+            save_checkpoint(checkpoint, checkpoint_path)
+            train(model, train_loader, criterion, optimizer)
+
+
+def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: optim.Optimizer) -> None:
+    """
+    Iteration of the training process
+    :param model: model to be trained
+    :param train_loader: training dataloader
+    :param criterion: criterion for loss computation
+    :param optimizer: optimizer of the model
+    :return: None
+    """
+    for idx, (imgs, captions) in tqdm(enumerate(train_loader), total=len(train_loader), leave=False):
+        # move data to GPU if available
+        imgs = imgs.to(device)
+        captions = captions.to(device)
+
+        # Forward propagation
+        out = model(imgs, captions[:-1])
+
+        # Calculate loss
+        loss = criterion(out.reshape(-1, out.shape[2]), captions.reshape(-1))
+
+        # Back propagation
+        optimizer.zero_grad()
+        loss.backward()
+
+        # Update weights
+        optimizer.step()
+
+        # Print training loss
+        if idx % print_freq == 0:
+            print(f"Training loss {idx}/{len(train_loader)}: {loss.item()}")
 
 
 if __name__ == "__main__":
