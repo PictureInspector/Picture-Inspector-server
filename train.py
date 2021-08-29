@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import torch.backends.cudnn as cudnn
 import torchvision.transforms as transforms
+import numpy as np
 from dataset import FlickrDataset, MyCollate
 from models import Model
 from utils import load_checkpoint, save_checkpoint
@@ -54,7 +55,7 @@ def main():
     pad_idx = dataset.voc.wrd2idx[pad_token]
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size, num_workers=workers, shuffle=True,
                               pin_memory=True, collate_fn=MyCollate(pad_idx=pad_idx))
-    val_loader = DataLoader(dataset=train_set, batch_size=batch_size, num_workers=workers, shuffle=True,
+    val_loader = DataLoader(dataset=val_set, batch_size=batch_size, num_workers=workers, shuffle=True,
                             pin_memory=True, collate_fn=MyCollate(pad_idx=pad_idx))
     model = Model(embed_dim, decoder_dim, len(dataset.voc), num_layers, dropout, train_conv).to(device)
     criterion = nn.CrossEntropyLoss(ignore_index=dataset.voc.wrd2idx[pad_token])
@@ -75,6 +76,7 @@ def main():
             }
             save_checkpoint(checkpoint, checkpoint_path)
             train(model, train_loader, criterion, optimizer)
+            validate(model, val_loader, criterion)
 
 
 def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: optim.Optimizer) -> None:
@@ -86,7 +88,10 @@ def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss
     :param optimizer: optimizer of the model
     :return: None
     """
-    for idx, (imgs, captions) in tqdm(enumerate(train_loader), total=len(train_loader), leave=False):
+    # set the model to the training mode
+    model.train()
+
+    for idx, (imgs, captions) in enumerate(train_loader):
         # move data to GPU if available
         imgs = imgs.to(device)
         captions = captions.to(device)
@@ -107,6 +112,28 @@ def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss
         # Print training loss
         if idx % print_freq == 0:
             print(f"Training loss {idx}/{len(train_loader)}: {loss.item()}")
+
+
+def validate(model: Model, val_loader: DataLoader, criterion: nn.CrossEntropyLoss):
+    losses = []
+
+    model.eval()
+
+    for idx, (imgs, captions) in tqdm(enumerate(val_loader), total=len(val_loader), leave=False):
+        # move data to GPU if available
+        imgs = imgs.to(device)
+        captions = captions.to(device)
+
+        # Forward propagation
+        out = model(imgs, captions[:-1])
+
+        # Calculate loss
+        loss = criterion(out.reshape(-1, out.shape[2]), captions.reshape(-1))
+
+        losses.append(loss.item())
+
+    # Print training loss
+    print(f"Validation loss: {np.mean(losses)}")
 
 
 if __name__ == "__main__":
