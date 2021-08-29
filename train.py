@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import numpy as np
 from dataset import FlickrDataset, MyCollate
 from models import Model
-from utils import load_checkpoint, save_checkpoint
+from utils import load_checkpoint, save_checkpoint, caption_samples
 from tqdm import tqdm
 
 pad_token = "<PAD>"
@@ -19,28 +19,31 @@ captions_file = "./data/captions.txt"  # file with captions
 # Training parameters
 batch_size = 32
 workers = 2
-lr = 1e-3
-checkpoint_path = "checkpoint.pth"
-load_model = False
-save_model = True
-step = 0
-epochs = 20
+lr = 1e-3  # learning rate
+checkpoint_path = "checkpoint.pth"  # path from which model and optimizer are loaded and where they are saved
+model_path = "model.pth"  # path to which model is saved
+dataset_path = "dataset.pth"
+load_model = False  # whether to load model or not
+save_model = True  # whether to save model or not
+step = 0  # starting epoch
+epochs = 10  # the total number of epochs
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
+print_freq = 100  # how frequently print the information during the training
+cudnn.benchmark = True
 
 # Model parameters
 embed_dim = 256  # embedding size
-attention_dim = 256  # size of the attention network
-decoder_dim = 256
+decoder_dim = 256  # dimension of decoder RNN
 dropout = 0.5
-train_conv = False
-num_layers = 1
-print_freq = 100
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
-cudnn.benchmark = True
+train_conv = False  # whether to train ResNet or not
+num_layers = 1  # the number of layers in LSTM
 
 
-def main():
+def main() -> None:
+    """
+    Main function for the training
+    :return: None
+    """
     global step
     transform = transforms.Compose(
         [
@@ -49,25 +52,36 @@ def main():
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
     )
+
+    # create the dataset
     dataset = FlickrDataset(img_folder, captions_file, transform)
+    torch.save(dataset, "dataset.pth")
+
+    # Split the dataset with 20% to be in the validation dataset
     test_size = len(dataset) // 5
     train_set, val_set = torch.utils.data.random_split(dataset, [len(dataset) - test_size, test_size])
+
+    # get the index for padding
     pad_idx = dataset.voc.wrd2idx[pad_token]
+
+    # get dataloaders from the datasets
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size, num_workers=workers, shuffle=True,
                               pin_memory=True, collate_fn=MyCollate(pad_idx=pad_idx))
     val_loader = DataLoader(dataset=val_set, batch_size=batch_size, num_workers=workers, shuffle=True,
                             pin_memory=True, collate_fn=MyCollate(pad_idx=pad_idx))
+
+    # Initialize the model, criterion and optimizer
     model = Model(embed_dim, decoder_dim, len(dataset.voc), num_layers, dropout, train_conv).to(device)
     criterion = nn.CrossEntropyLoss(ignore_index=dataset.voc.wrd2idx[pad_token])
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
+    # if load_model is True, load the model and optimizer from the checkpoint
     if load_model:
         checkpoint = torch.load(checkpoint_path)
         step = load_checkpoint(checkpoint, model, optimizer)
 
-    model.train()
-
     for epoch in range(step, epochs):
+        # save_model is True, save the model to the checkpoint
         if save_model:
             checkpoint = {
                 "state_dict": model.state_dict(),
@@ -75,8 +89,13 @@ def main():
                 "step": epoch,
             }
             save_checkpoint(checkpoint, checkpoint_path)
-            train(model, train_loader, criterion, optimizer)
-            validate(model, val_loader, criterion)
+            torch.save(model, "model.pth")
+        # Training iteration
+        train(model, train_loader, criterion, optimizer)
+        # Validation iteration
+        validate(model, val_loader, criterion)
+        # Print some examples
+        caption_samples("examples", model, dataset.voc, device, transform)
 
 
 def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: optim.Optimizer) -> None:
@@ -114,7 +133,14 @@ def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss
             print(f"Training loss {idx}/{len(train_loader)}: {loss.item()}")
 
 
-def validate(model: Model, val_loader: DataLoader, criterion: nn.CrossEntropyLoss):
+def validate(model: Model, val_loader: DataLoader, criterion: nn.CrossEntropyLoss) -> None:
+    """
+    Validation of the model
+    :param model: model to be validated
+    :param val_loader: dataloader for validation
+    :param criterion: criterion for loss computation
+    :return: None
+    """
     losses = []
 
     model.eval()
