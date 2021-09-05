@@ -70,6 +70,6 @@ def caption_samples(directory: str, model: Model, voc: Vocabulary, device: torch
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dataset = torch.load("dataset.pth")
-    model = torch.load("model.pth")
-    caption_samples("examples", model, dataset.voc, device, dataset.transform)
+    dataset = torch.load("./Neural_Network/dataset.pth")
+    model = torch.load("./Neural_Network/model.pth")
+    caption_samples("./Neural_Network/examples", model, dataset.voc, device, dataset.transform)
