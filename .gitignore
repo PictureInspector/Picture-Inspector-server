@@ -1,4 +1,4 @@
 .idea
-data
+Neural Network/data
 *.pth
-examples
+Neural Network/examples

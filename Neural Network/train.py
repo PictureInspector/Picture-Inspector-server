@@ -14,7 +14,7 @@ pad_token = "<PAD>"
 
 # Data parameters
 img_folder = "./data/images"  # folder with images
-captions_file = "./data/captions.txt"  # file with captions
+captions_file = "data/captions.txt"  # file with captions
 
 # Training parameters
 batch_size = 32
