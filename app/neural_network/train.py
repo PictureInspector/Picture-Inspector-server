@@ -13,21 +13,21 @@ from tqdm import tqdm
 pad_token = "<PAD>"
 
 # Data parameters
-img_folder = "./data/images"  # folder with images
-captions_file = "data/captions.txt"  # file with captions
+img_folder = ".app/neural_network/data/images"  # folder with images
+captions_file = ".app/neural_network/data/captions.txt"  # file with captions
 
 # Training parameters
 batch_size = 32
 workers = 2
 lr = 1e-3  # learning rate
-checkpoint_path = "checkpoint.pth"  # path from which model and optimizer are loaded and where they are saved
-model_path = "model.pth"  # path to which model is saved
+checkpoint_path = "checkpoint.pth"  # path from which entity and optimizer are loaded and where they are saved
+model_path = "entity.pth"  # path to which entity is saved
 dataset_path = "dataset.pth"
-load_model = False  # whether to load model or not
-save_model = True  # whether to save model or not
+load_model = False  # whether to load entity or not
+save_model = True  # whether to save entity or not
 step = 0  # starting epoch
 epochs = 10  # the total number of epochs
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for entity and PyTorch tensors
 print_freq = 100  # how frequently print the information during the training
 cudnn.benchmark = True
 
@@ -70,18 +70,18 @@ def main() -> None:
     val_loader = DataLoader(dataset=val_set, batch_size=batch_size, num_workers=workers, shuffle=True,
                             pin_memory=True, collate_fn=MyCollate(pad_idx=pad_idx))
 
-    # Initialize the model, criterion and optimizer
+    # Initialize the entity, criterion and optimizer
     model = Model(embed_dim, decoder_dim, len(dataset.voc), num_layers, dropout, train_conv).to(device)
     criterion = nn.CrossEntropyLoss(ignore_index=dataset.voc.wrd2idx[pad_token])
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    # if load_model is True, load the model and optimizer from the checkpoint
+    # if load_model is True, load the entity and optimizer from the checkpoint
     if load_model:
         checkpoint = torch.load(checkpoint_path)
         step = load_checkpoint(checkpoint, model, optimizer)
 
     for epoch in range(step, epochs):
-        # save_model is True, save the model to the checkpoint
+        # save_model is True, save the entity to the checkpoint
         if save_model:
             checkpoint = {
                 "state_dict": model.state_dict(),
@@ -89,7 +89,7 @@ def main() -> None:
                 "step": epoch,
             }
             save_checkpoint(checkpoint, checkpoint_path)
-            torch.save(model, "model.pth")
+            torch.save(model, "entity.pth")
         # Training iteration
         train(model, train_loader, criterion, optimizer)
         # Validation iteration
@@ -101,13 +101,13 @@ def main() -> None:
 def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: optim.Optimizer) -> None:
     """
     Iteration of the training process
-    :param model: model to be trained
+    :param model: entity to be trained
     :param train_loader: training dataloader
     :param criterion: criterion for loss computation
-    :param optimizer: optimizer of the model
+    :param optimizer: optimizer of the entity
     :return: None
     """
-    # set the model to the training mode
+    # set the entity to the training mode
     model.train()
 
     for idx, (imgs, captions) in enumerate(train_loader):
@@ -135,8 +135,8 @@ def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss
 
 def validate(model: Model, val_loader: DataLoader, criterion: nn.CrossEntropyLoss) -> None:
     """
-    Validation of the model
-    :param model: model to be validated
+    Validation of the entity
+    :param model: entity to be validated
     :param val_loader: dataloader for validation
     :param criterion: criterion for loss computation
     :return: None

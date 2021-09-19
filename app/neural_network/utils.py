@@ -9,10 +9,10 @@ import os
 
 def load_checkpoint(checkpoint: dict, model: Model, optimizer: optim.Optimizer) -> int:
     """
-    Loads model. optimizer and step number from the checkpoint
-    :param checkpoint: Dictionary with model state dict, optimizer state dict and step number
+    Loads entity. optimizer and step number from the checkpoint
+    :param checkpoint: Dictionary with entity state dict, optimizer state dict and step number
     :param model: Model to be loaded
-    :param optimizer: Optimizer for this model
+    :param optimizer: Optimizer for this entity
     :return: step number
     """
     model.load_state_dict(checkpoint["state_dict"])
@@ -24,7 +24,7 @@ def load_checkpoint(checkpoint: dict, model: Model, optimizer: optim.Optimizer) 
 def save_checkpoint(checkpoint: dict, checkpoint_path: str = "checkpoint.pth") -> None:
     """
     Saves checkpoints
-    :param checkpoint: Dictionary with model state dict, optimizer state dict and step number
+    :param checkpoint: Dictionary with entity state dict, optimizer state dict and step number
     :param checkpoint_path: Path where checkpoint should be saved
     :return: None
     """
@@ -36,7 +36,7 @@ def caption_sample(sample: Image, model: Model, voc: Vocabulary, device: torch.d
     """
     Get the caption for the given image
     :param sample: image
-    :param model: model which will produce the caption
+    :param model: entity which will produce the caption
     :param voc: vocabulary
     :param device: device on which the image will be loaded
     :param transform: transform tob be applied to the image
@@ -53,13 +53,13 @@ def caption_samples(directory: str, model: Model, voc: Vocabulary, device: torch
     """
     Caption several samples from one directory
     :param directory: directory where all samples are
-    :param model: model which will produce the caption
+    :param model: entity which will produce the caption
     :param voc: vocabulary
     :param device: device on which the image will be loaded
     :param transform: transform tob be applied to the image
     :return: None
     """
-    # set the model to the evaluation mode
+    # set the entity to the evaluation mode
     model.eval()
     for item in os.listdir(directory):
         # for each sample convert it to RGB
@@ -70,6 +70,6 @@ def caption_samples(directory: str, model: Model, voc: Vocabulary, device: torch
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dataset = torch.load("./Neural_Network/dataset.pth")
-    model = torch.load("./Neural_Network/model.pth")
-    caption_samples("./Neural_Network/examples", model, dataset.voc, device, dataset.transform)
+    dataset = torch.load("dataset.pth")
+    model = torch.load("entity.pth")
+    caption_samples("examples", model, dataset.voc, device, dataset.transform)

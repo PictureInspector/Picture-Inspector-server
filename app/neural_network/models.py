@@ -71,7 +71,7 @@ class Model(nn.Module):
     def __init__(self, embed_dim: int, decoder_dim: int, voc_size: int, num_layers: int, dropout: float = 0.5,
                  train_conv: bool = False) -> None:
         """
-        Initialization of the model
+        Initialization of the entity
         :param embed_dim: embedding size
         :param decoder_dim: size of decoder's RNN
         :param voc_size: size of the vocabulary
@@ -85,7 +85,7 @@ class Model(nn.Module):
 
     def forward(self, imgs: torch.Tensor, captions: torch.Tensor) -> torch.Tensor:
         """
-        Forward propagation of the model
+        Forward propagation of the entity
         :param imgs: a batch of images
         :param captions: encoded captions
         :return: scores for each word in the vocabulary
