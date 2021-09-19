@@ -1,11 +1,11 @@
-import torch
-from torch.utils.data import Dataset
-from torch.nn.utils.rnn import pad_sequence
-import torchvision.transforms as transforms
-from PIL import Image
-import pandas as pd
 import os
 import spacy
+import torch
+import pandas as pd
+import torchvision.transforms as transforms
+from PIL import Image
+from torch.utils.data import Dataset
+from torch.nn.utils.rnn import pad_sequence
 
 spacy_eng = spacy.load('en_core_web_sm')
 start_token = "<SOS>"

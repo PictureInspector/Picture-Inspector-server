@@ -4,7 +4,7 @@ from uuid import uuid4
 import os
 
 
-IMAGE_FOLDER = './images'
+IMAGE_FOLDER = './data/images'
 
 
 def save_image(file: FileStorage) -> Tuple[str, str]:

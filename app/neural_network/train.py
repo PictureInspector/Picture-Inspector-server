@@ -1,20 +1,22 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
 import torch.backends.cudnn as cudnn
 import torchvision.transforms as transforms
 import numpy as np
-from dataset import FlickrDataset, MyCollate
-from models import Model
-from utils import load_checkpoint, save_checkpoint, caption_samples
+from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
+from app.neural_network.dataset import FlickrDataset, MyCollate
+from app.neural_network.models import Model
+from app.neural_network.utils import load_checkpoint, save_checkpoint
+from app.neural_network.utils import caption_samples
+
 
 pad_token = "<PAD>"
 
 # Data parameters
-img_folder = ".app/neural_network/data/images"  # folder with images
-captions_file = ".app/neural_network/data/captions.txt"  # file with captions
+img_folder = "./app/neural_network/data/images"  # folder with images
+captions_file = "./app/neural_network/data/captions.txt"  # file with captions
 
 # Training parameters
 batch_size = 32
