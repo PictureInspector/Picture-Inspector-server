@@ -4,12 +4,14 @@ from PIL import Image
 from app.neural_network.utils import caption_sample
 
 
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 vocabulary = torch.load("./app/data/dataset.pth").voc
 model = torch.load("./app/data/entity.pth").to(device)
+model.eval()
 
 
 def retrieve_caption(image_path: str) -> str:
+    print(image_path)
 
     image = Image.open(image_path)
 

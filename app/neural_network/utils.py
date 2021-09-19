@@ -77,8 +77,8 @@ def caption_samples(directory: str, model: Model, voc: Vocabulary, device: torch
 
 
 if __name__ == "__main__":
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device = torch.device("cpu")
     dataset = torch.load("./app/data/dataset.pth")
     model = torch.load("./app/data/entity.pth").to(device)
-    caption_samples("./app/data/examples", model, dataset.voc, device, dataset.transform)
+    caption_samples("./app/data/images", model, dataset.voc, device, dataset.transform)

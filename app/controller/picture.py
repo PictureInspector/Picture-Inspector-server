@@ -35,4 +35,6 @@ class Picture(Resource):
             'caption': caption
         }
 
+        print(response)
+
         return response, 200
