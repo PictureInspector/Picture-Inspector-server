@@ -42,6 +42,14 @@ def caption_sample(sample: Image, model: Model, voc: Vocabulary, device: torch.d
     :param transform: transform tob be applied to the image
     :return: caption for the image
     """
+    if transform is None:
+        transform = transforms.Compose(
+            [
+                transforms.Resize((256, 256)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
     # Apply transform and move the image to the device
     sample = transform(sample).unsqueeze(0).to(device)
     # get the caption with start token and end token removed
@@ -69,7 +77,8 @@ def caption_samples(directory: str, model: Model, voc: Vocabulary, device: torch
 
 
 if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dataset = torch.load("dataset.pth")
-    model = torch.load("entity.pth")
-    caption_samples("examples", model, dataset.voc, device, dataset.transform)
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
+    dataset = torch.load("./app/data/dataset.pth")
+    model = torch.load("./app/data/entity.pth").to(device)
+    caption_samples("./app/data/examples", model, dataset.voc, device, dataset.transform)
