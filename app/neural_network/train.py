@@ -29,14 +29,14 @@ dataset_path = "./app/data/dataset.pth"
 load_model = False  # whether to load entity or not
 save_model = True  # whether to save entity or not
 step = 0  # starting epoch
-epochs = 1  # the total number of epochs
+epochs = 20  # the total number of epochs
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for entity and PyTorch tensors
 print_freq = 100  # how frequently print the information during the training
 cudnn.benchmark = True
 
 # Model parameters
-embed_dim = 512  # embedding size
-decoder_dim = 256  # dimension of decoder RNN
+embed_dim = 128  # embedding size
+decoder_dim = 128  # dimension of decoder RNN
 dropout = 0.5
 train_conv = False  # whether to train ResNet or not
 num_layers = 1  # the number of layers in LSTM
