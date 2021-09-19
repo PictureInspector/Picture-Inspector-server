@@ -3,8 +3,8 @@ import torch
 import torch.optim as optim
 import torchvision.transforms as transforms
 from PIL import Image
-from app.neural_network.models import Model
-from app.neural_network.dataset import Vocabulary
+from models import Model
+from dataset import Vocabulary
 
 
 def load_checkpoint(checkpoint: dict, model: Model, optimizer: optim.Optimizer) -> int:

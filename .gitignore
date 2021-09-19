@@ -1,4 +1,3 @@
 .idea
-Neural_Network/data
+app/data
 *.pth
-Neural_Network/examples

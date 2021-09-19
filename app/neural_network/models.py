@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
-from app.neural_network.dataset import Vocabulary
+from dataset import Vocabulary
 
 
 class Encoder(nn.Module):

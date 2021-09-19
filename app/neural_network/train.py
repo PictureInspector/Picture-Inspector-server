@@ -6,25 +6,27 @@ import torchvision.transforms as transforms
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-from app.neural_network.dataset import FlickrDataset, MyCollate
-from app.neural_network.models import Model
-from app.neural_network.utils import load_checkpoint, save_checkpoint
-from app.neural_network.utils import caption_samples
+import os
+from dataset import FlickrDataset, MyCollate
+from models import Model
+from utils import load_checkpoint, save_checkpoint
+from utils import caption_samples
 
 
 pad_token = "<PAD>"
 
 # Data parameters
-img_folder = "./app/neural_network/data/images"  # folder with images
-captions_file = "./app/neural_network/data/captions.txt"  # file with captions
+img_folder = "./app/data/training_images"  # folder with images
+captions_file = "./app/data/captions.txt"  # file with captions
 
 # Training parameters
 batch_size = 32
 workers = 2
 lr = 1e-3  # learning rate
-checkpoint_path = "checkpoint.pth"  # path from which entity and optimizer are loaded and where they are saved
-model_path = "entity.pth"  # path to which entity is saved
-dataset_path = "dataset.pth"
+# path from which entity and optimizer are loaded and where they are saved
+checkpoint_path = "./app/data/checkpoint.pth"
+model_path = "./app/data/entity.pth"  # path to which entity is saved
+dataset_path = "./app/data/dataset.pth"
 load_model = False  # whether to load entity or not
 save_model = True  # whether to save entity or not
 step = 0  # starting epoch
@@ -57,7 +59,7 @@ def main() -> None:
 
     # create the dataset
     dataset = FlickrDataset(img_folder, captions_file, transform)
-    torch.save(dataset, "dataset.pth")
+    torch.save(dataset, dataset_path)
 
     # Split the dataset with 20% to be in the validation dataset
     test_size = len(dataset) // 5
@@ -91,13 +93,13 @@ def main() -> None:
                 "step": epoch,
             }
             save_checkpoint(checkpoint, checkpoint_path)
-            torch.save(model, "entity.pth")
+            torch.save(model, model_path)
         # Training iteration
         train(model, train_loader, criterion, optimizer)
         # Validation iteration
         validate(model, val_loader, criterion)
         # Print some examples
-        caption_samples("examples", model, dataset.voc, device, transform)
+        caption_samples("./app/data/examples", model, dataset.voc, device, transform)
 
 
 def train(model: Model, train_loader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: optim.Optimizer) -> None:
@@ -165,4 +167,5 @@ def validate(model: Model, val_loader: DataLoader, criterion: nn.CrossEntropyLos
 
 
 if __name__ == "__main__":
+    print(device)
     main()

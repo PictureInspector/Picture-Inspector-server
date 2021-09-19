@@ -1,10 +1,11 @@
+import numpy as np
 import torch
 from PIL import Image
 from app.neural_network.utils import caption_sample
 
 
-model = torch.load('./app/neural_network/model.pth')
-vocabulary = torch.load('./app/neural_network/dataset.pth').voc
+model = np.NAN
+vocabulary = np.NAN
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
