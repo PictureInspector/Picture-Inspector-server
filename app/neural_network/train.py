@@ -6,11 +6,10 @@ import torchvision.transforms as transforms
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-import os
-from dataset import FlickrDataset, MyCollate
-from models import Model
-from utils import load_checkpoint, save_checkpoint
-from utils import caption_samples
+from app.neural_network.dataset import FlickrDataset, MyCollate
+from app.neural_network.models import Model
+from app.neural_network.utils import load_checkpoint, save_checkpoint
+from app.neural_network.utils import caption_samples
 
 
 pad_token = "<PAD>"
@@ -30,13 +29,13 @@ dataset_path = "./app/data/dataset.pth"
 load_model = False  # whether to load entity or not
 save_model = True  # whether to save entity or not
 step = 0  # starting epoch
-epochs = 10  # the total number of epochs
+epochs = 1  # the total number of epochs
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for entity and PyTorch tensors
 print_freq = 100  # how frequently print the information during the training
 cudnn.benchmark = True
 
 # Model parameters
-embed_dim = 256  # embedding size
+embed_dim = 512  # embedding size
 decoder_dim = 256  # dimension of decoder RNN
 dropout = 0.5
 train_conv = False  # whether to train ResNet or not
@@ -85,6 +84,9 @@ def main() -> None:
         step = load_checkpoint(checkpoint, model, optimizer)
 
     for epoch in range(step, epochs):
+        # Training iteration
+        train(model, train_loader, criterion, optimizer)
+        # Validation iteration
         # save_model is True, save the entity to the checkpoint
         if save_model:
             checkpoint = {
@@ -94,9 +96,6 @@ def main() -> None:
             }
             save_checkpoint(checkpoint, checkpoint_path)
             torch.save(model, model_path)
-        # Training iteration
-        train(model, train_loader, criterion, optimizer)
-        # Validation iteration
         validate(model, val_loader, criterion)
         # Print some examples
         caption_samples("./app/data/examples", model, dataset.voc, device, transform)
