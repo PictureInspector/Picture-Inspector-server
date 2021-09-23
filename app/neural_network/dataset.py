@@ -49,7 +49,7 @@ class Vocabulary:
         # dictionary of occurrences for each word
         occurs = {}
         # counter for the index
-        idx = 4
+        idx = self.__len__()
 
         for sentence in sentence_list:
             for word in self.tokenize(sentence):
