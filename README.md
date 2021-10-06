@@ -31,7 +31,7 @@ Type following commands to set environment variables
 > set FLASK_ENV=/path/to/project/development
 ```
 
-###Linux
+### Linux
 ```shell
 > export FLASK_APP=/path/to/project/app.py
 > export FLASK_ENV=/path/to/project/development
