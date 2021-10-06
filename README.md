@@ -40,5 +40,5 @@ Type following commands to set environment variables
 # Running
 Type following command to run the server:
 ```shell script
-> python3 -m flask run
+> python3 -m flask run --host=0.0.0.0
 ```
