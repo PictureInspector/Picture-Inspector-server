@@ -47,7 +47,7 @@ def save_feedback():
 
     parser.add_argument(
         'is_good',
-        type=bool,
+        type=int,
         required=True
     )
     
@@ -56,7 +56,7 @@ def save_feedback():
     caption_model = Caption(
         image_url=args['image_url'],
         caption=args['caption'],
-        isGood=args['is_good']
+        isGood=bool(args['is_good'])
     )
 
     caption_model.add()
