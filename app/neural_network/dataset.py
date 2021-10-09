@@ -33,7 +33,7 @@ class Vocabulary:
         return len(self.idx2wrd)
 
     @staticmethod
-    def tokenize(text: str) -> list[str]:
+    def tokenize(text: str) -> "list(str)":
         """
         :param text: input text to be tokenized
         :return: tokenized text
@@ -63,7 +63,7 @@ class Vocabulary:
                     self.idx2wrd[idx] = word
                     idx += 1
 
-    def numericalize(self, text: str) -> list[int]:
+    def numericalize(self, text: str) -> "list(int)":
         """
         :param text: text to be numericalized
         :return: numericalized text

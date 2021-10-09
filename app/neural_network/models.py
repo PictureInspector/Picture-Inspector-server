@@ -96,7 +96,7 @@ class Model(nn.Module):
         return out
 
     def caption_image(self, img: torch.Tensor, voc: Vocabulary, max_len: int = 50, eos_token: str = "<EOS>") \
-            -> list[str]:
+            -> "list(str)":
         """
         Caption the given image
         :param img: image to be captioned

@@ -5,8 +5,8 @@ from app.neural_network.utils import caption_sample
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-vocabulary = torch.load("./app/data/dataset.pth").voc
-model = torch.load("./app/data/entity.pth").to(device)
+vocabulary = torch.load("./app/data/dataset.pth", map_location=device).voc
+model = torch.load("./app/data/entity.pth", map_location=device).to(device)
 model.eval()
 
 
