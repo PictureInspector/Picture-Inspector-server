@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, LargeBinary, Boolean
+from sqlalchemy import Integer, String, Boolean
 from app import db
 
 
