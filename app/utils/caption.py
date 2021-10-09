@@ -11,8 +11,7 @@ model.eval()
 
 
 def retrieve_caption(image_path: str) -> str:
-    print(image_path)
-
+    
     image = Image.open(image_path)
 
     return caption_sample(

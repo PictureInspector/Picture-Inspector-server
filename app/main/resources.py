@@ -1,3 +1,4 @@
+import sqlalchemy
 from werkzeug.datastructures import FileStorage
 from flask_restful.reqparse import RequestParser
 from app.main.models import Caption
@@ -20,7 +21,7 @@ def get_caption_for_img():
     image_file: FileStorage = args['image']
     image_name, image_path = save_image(file=image_file)
     
-    caption = retrieve_caption(image_path=image_path)
+    caption = retrieve_caption(image_path=image_path)[:-2]
     
     response = {
         'imageURL': image_name,
@@ -40,12 +41,6 @@ def save_feedback():
     )
 
     parser.add_argument(
-        'caption',
-        type=str,
-        required=True
-    )
-
-    parser.add_argument(
         'is_good',
         type=int,
         required=True
@@ -55,11 +50,13 @@ def save_feedback():
     
     caption_model = Caption(
         image_url=args['image_url'],
-        caption=args['caption'],
         isGood=bool(args['is_good'])
     )
 
-    caption_model.add()
+    try:
+        caption_model.add()
+    except sqlalchemy.exc.IntegrityError:
+        return 'already saved', 200
 
-    return 'feedback saved successfully', 200
+    return 'success', 200
 
