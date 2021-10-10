@@ -8,3 +8,5 @@ venv
 check_database.py
 run.sh
 database.db
+cert.pem
+key.pem
