@@ -1,9 +1,12 @@
-from enum import unique
 from sqlalchemy import Integer, String, Boolean
 from app import db
 
 
 class Caption(db.Model):
+    """
+    This model represents image caption feedback.
+    Each entry contains a unique image url, and the boolean feedback value.
+    """
 
     __tablename__ = "caption"
 
