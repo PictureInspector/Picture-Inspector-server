@@ -44,11 +44,9 @@ All you need is to have openssl installed:
 > openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365
 ```
 This command writes a new certificate in cert.pem with its corresponding private key in key.pem, with a validity period of 365 days. When you run this command, you will be asked a few questions.
-Here is an example of signing a certificate(instead of <server name> you should provide the name of your hosting server):
+Here is an example of signing a certificate(instead of "server name" you should provide the name of your hosting server):
 ```
 Generating a RSA private key
-..........................................................................................................................................................................................++++
-............++++
 writing new private key to 'key.pem'
 -----
 You are about to be asked to enter information that will be incorporated
@@ -68,7 +66,7 @@ Email Address []:.
 ```
 
 After creating certificate you should also copy it to the folder with the bot so that
-it uses the sertificate.
+it uses the certificate.
 
 # Running
 Type following command to run the server:
